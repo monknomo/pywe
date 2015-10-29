@@ -1,5 +1,5 @@
-rem@@echo on
-
+rem @@echo on
+rem we don't seem to be setting the current version after installing
 SETLOCAL EnableDelayedExpansion
  
 SHIFT
@@ -133,16 +133,18 @@ IF "%PYINSTSTYLE%"=="msi1" (
             echo Download complete, installing python %PYTHONDLVERSION%
         )
         "%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.exe" /passive TargetDir="%PYWE_HOME%\versions\%PYTHONDLVERSION%" Include_launcher=0 InstallLauncherAllUsers=0 SimpleInstall=1 Shortcuts=0 AssociateFiles=0
+        pause
         
     ) ELSE (
         echo The Python installer style is not recognized
         echo There is a problem with your %PYWE_HOME%\lib\pythonversions.txt
     )
 )
-echo setting current version if it doesn't exist
-IF NOT EXIST "%PYWE_HOME%\lib\currentVersion.txt" (
-	echo "%1" > "%PYWE_HOME%\lib\currentVersion.txt"
-)
+echo using downloaded python as current version
+echo %PYTHONDLVERSION% > "%PYWE_HOME%\lib\currentVersion.txt"
+
+
+
 GOTO End
 
 :Help

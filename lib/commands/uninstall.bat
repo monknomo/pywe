@@ -27,6 +27,11 @@ FOR /F "tokens=1,2,3,4 delims=," %%a in ('type "%PYWE_HOME%\lib\pythonversions.t
 	)	
 )
 
+ECHO %1 is either unsupported or unrecogized as a version of PYTHONDLURL
+ECHO %1 should be a Python version number
+ECHO Try "pywe --versions" to see what is available
+goto End
+
 :CheckForUninstaller
 IF "%PYINSTSTYLE%"=="msi1" (
     IF NOT EXIST "%PYWE_HOME%\lib\downloads\python-%1.msi" (
@@ -39,10 +44,10 @@ IF "%PYINSTSTYLE%"=="msi1" (
     ) ELSE (
         rem do nothing
     )
-    msiexec /x "%PYWE_HOME%\lib\downloads\python-%1.msi" TARGETDIR="%PYWE_HOME%\versions\%1" /qn
-    del /Q /F /S "%PYWE_HOME%\versions\%1"
-    rd /S /Q "%PYWE_HOME%\versions\%1"
-    del /Q /F "%PYWE_HOME%\lib\downloads\python-%1.msi"
+    msiexec /x "%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.msi" TARGETDIR="%PYWE_HOME%\versions\%1" /qn
+    del /Q /F /S "%PYWE_HOME%\versions\%PYTHONDLVERSION%"
+    rd /S /Q "%PYWE_HOME%\versions\%PYTHONDLVERSION%"
+    rem del /Q /F "%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.msi"
 ) ELSE (
     IF "%PYINSTSTYLE%"=="exe1" (
         IF NOT EXIST "%PYWE_HOME%\lib\downloads\python-%1.exe" (
@@ -56,19 +61,21 @@ IF "%PYINSTSTYLE%"=="msi1" (
             rem do nothing
         )
         echo uninstalling
-        "%PYWE_HOME%\lib\downloads\python-%1.exe" /uninstall /passive TargetDir="%PYWE_HOME%\versions\%PYTHONDLVERSION%"
-        rem del /Q /F "%PYWE_HOME%\lib\downloads\python-%1.exe"
+        "%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.exe" /uninstall /passive TargetDir="%PYWE_HOME%\versions\%PYTHONDLVERSION%"
+        rem del /Q /F "%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.exe"
 
     ) ELSE (
         echo The Python installer style is not recognized
         echo There is a problem with your %PYWE_HOME%\lib\pythonversions.txt
     )
 )
-FOR /F  %%a in (currentVersion.txt) do (
+FOR /F  %%a in (%PYWE_HOME%\lib\currentVersion.txt) do (
 	SET $CURRENT_PY=%%a
 )
 IF "%$CURRENT_PY%"=="%PYTHONDLVERSION%" (
-    echo > "%PYWE_HOME%\lib\currentVersion.txt"
+    echo. > "%PYWE_HOME%\lib\currentVersion.txt"
+    
+    
 )
 GOTO End
 
