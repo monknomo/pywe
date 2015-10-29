@@ -52,7 +52,7 @@ After you have setup all the environment variables, start a new command line win
 Extending PyWE
 ---------------------
 
-PyWE can be extended by adding files that windows can execute (batch file, vbscript, powershell script, other) to the %PYWE_HOME%\lib\commands directory.  PyWE passes arguments to scripts in this form "script.bat script_name other args following"  Each script should parse "script.bat script_name --help" and echo something helpful.
+PyWE can be extended by adding files that windows can execute (batch files, vbscripts, powershell scripts, executables, others) to the %PYWE_HOME%\lib\commands directory.  PyWE passes arguments to scripts in this form "script.bat script_name other args following"  Each script should parse "script.bat script_name --help" and echo something helpful.
 
 ### Simple PyWE Extension Example
 
@@ -88,4 +88,14 @@ Remove the %PYWE_HOME% environment variable
 	
 Modify the PATH by right clicking on "My Computer" or "Computer" from the start menu, or on the desktop and selecting “properties.”  From the System menu, select "Advanced system settings."  From there, select “Environment Variables.”  Remove all references to pywe from the PATH variable.
 
+Creating a PyWE Installer
+--------------------------
 
+[This is long enough to have its own instructions](https://github.com/monknomo/pywe/blob/master/CREATE_INSTALLER.md)
+
+Right now we are using an IExpress based process, but any improvement would be much appreciated, we're not in love with the way we do it, just that IExpress is free and easy.  An installer that would allow for users to select between global and per-user installs would be nice, for instance.
+
+Historical Errata
+------------------
+
+PyWE was originally called Pywin, but after some search, it became apparent that there is another project called Pywin.  Not wanting to get involved in a search rank fight, we ceded the ground and renamed the project.  This was so early in the project life, that the single user/maintainer was not confused and hopes that future users won't even know about it, except for the existence of this note.
