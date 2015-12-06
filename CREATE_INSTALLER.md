@@ -10,7 +10,9 @@ There are two versions of IExpress.exe included with 64-bit Windows, one that ma
 
 If you are on 32-bit Windows, the 32-bit IExpress.exe is the only one available, in C:\Windows\System32.
 
-IExpress.exe seems to require being started as adminstrator, but I have not run into this on all my computers, YMMV
+IExpress.exe seems to require being started as adminstrator, but I have not run into this on all my computers, YMMV.
+
+I don't see any particular reason to make 64-bit installers for a bunch of batch scripts, so I generally only make the 32-bit installer
 
 Illustrated Guide to Creating PyWE Executable
 -------------------------------------------------

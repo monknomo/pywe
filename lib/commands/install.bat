@@ -3,39 +3,31 @@ rem we don't seem to be setting the current version after installing
 SETLOCAL EnableDelayedExpansion
  
 SHIFT
-set $caDirectory=
+rem unset variables we're using
+set $CACERT=
+set $UNSAFE=
+echo %0
 IF "%1"=="" (
 	echo Please provide a Python version
 	echo Use --versions to list available Python versions
 	goto End
-) ELSE ( 
+) ELSE (
 	IF "%1"=="--help" (
 		goto Help
 	) ELSE (
         IF "%1"=="--no-check-certificate" (
-            set $UNSAFE=1
-            SHIFT
-            IF "%1"=="--ca-directory" (
-                SHIFT
-                set $caDirectory=%1
-                SHIFT
-            ) ELSE (
-                rem do nothing
-            )
+            goto setUnsafe
         ) ELSE (
-            IF "%1"=="--ca-directory" (
-                SHIFT set $caDirectory=%1
-                SHIFT
-                IF "%1"=="--no-check-certificate" (
-                    set $UNSAFE=1
-                    SHIFT
-                ) ELSE (
-                    rem do nothing
-                )
+            echo %1
+            IF "%1"=="--ca-certificate" (
+                echo %1
+                GOTO setCACERT
             )
         )
     )
 )
+
+:flagsSet
 
 FOR /F "tokens=1,2,3,4 delims=," %%a in ('type "%PYWE_HOME%\lib\pythonversions.txt"') do (
 	IF "%%a"=="%1" (
@@ -51,6 +43,20 @@ echo Python version not found
 echo Use --versions to list available Python versions
 goto End
 
+rem annoying section to deal with variable expansion in if blocks
+:setUnsafe
+    set $UNSAFE=1
+    SHIFT
+    goto flagsSet
+
+:setCACERT
+    SHIFT
+    echo %1
+    set $CACERT=%1
+    SHIFT
+    echo %1
+    goto flagsSet
+
 :InstallPython
 rem as of python 3.5.0 python stopped providing an msi installer
 rem as most of the old installers are msi installers this requires two install
@@ -59,7 +65,6 @@ rem specifiying an installation technique so we can accomodate even more
 IF "%PYINSTSTYLE%"=="msi1" (
     IF NOT EXIST "%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.msi" (
         IF "%$UNSAFE%"=="1" (
-            IF "%$caDirectory"=="" (
                 "%PYWE_HOME%\lib\wget.exe" --no-check-certificate --continue --tries=5 --output-document="%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.msi" "%PYTHONDLURL%"  
                 if errorlevel 1 (
                     echo An error was encountered trying to download Python from
@@ -67,8 +72,18 @@ IF "%PYINSTSTYLE%"=="msi1" (
                     del "%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.msi"
                     GOTO End
                 )        
+        ) ELSE (
+            IF "%$CACERT%"=="" (
+                "%PYWE_HOME%\lib\wget.exe" --continue --tries=5 --output-document="%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.msi" "%PYTHONDLURL%"
+                if errorlevel 1 (
+                        echo An error was encountered trying to download Python from
+                        echo "%PYTHONDLURL%" 
+                        del "%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.msi"
+                        GOTO End
+                    )
             ) ELSE (
-                "%PYWE_HOME%\lib\wget.exe" --no-check-certificate --ca-directory=%$caDirectory% --continue --tries=5 --output-document="%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.msi" "%PYTHONDLURL%"  
+                echo "%PYWE_HOME%\lib\wget.exe" --ca-certificate=%$CACERT% --continue --tries=5 --output-document="%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.msi" "%PYTHONDLURL%"  
+                "%PYWE_HOME%\lib\wget.exe" --ca-certificate=%$CACERT% --continue --tries=5 --output-document="%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.msi" "%PYTHONDLURL%"  
                 if errorlevel 1 (
                     echo An error was encountered trying to download Python from
                     echo "%PYTHONDLURL%" 
@@ -76,14 +91,6 @@ IF "%PYINSTSTYLE%"=="msi1" (
                     GOTO End
                 )  
             )
-        ) ELSE (
-            "%PYWE_HOME%\lib\wget.exe" --continue --tries=5 --output-document="%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.msi" "%PYTHONDLURL%"
-            if errorlevel 1 (
-                    echo An error was encountered trying to download Python from
-                    echo "%PYTHONDLURL%" 
-                    del "%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.msi"
-                    GOTO End
-                )
         )
         IF "%PYWE_DEBUG%"=="1" (
             GOTO End
@@ -116,13 +123,23 @@ IF "%PYINSTSTYLE%"=="msi1" (
                         GOTO End
                     )
                 )
-            ) ELSE (     
-                "%PYWE_HOME%\lib\wget.exe" --continue --tries=5 --output-document="%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.exe" "%PYTHONDLURL%" 
-                if errorlevel 1 (
-                    echo An error was encountered trying to download Python from
-                    echo "%PYTHONDLURL%" 
-                    del "%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.exe"
-                    GOTO End
+            ) ELSE (   
+                IF "%$caDirectory%"=="" (
+                    "%PYWE_HOME%\lib\wget.exe" --continue --tries=5 --output-document="%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.exe" "%PYTHONDLURL%" 
+                    if errorlevel 1 (
+                        echo An error was encountered trying to download Python from
+                        echo "%PYTHONDLURL%" 
+                        del "%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.exe"
+                        GOTO End
+                    )
+                ) ELSE (
+                    "%PYWE_HOME%\lib\wget.exe" --ca-directory=%$caDirectory% --continue --tries=5 --output-document="%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.exe" "%PYTHONDLURL%"   
+                    if errorlevel 1 (
+                        echo An error was encountered trying to download Python from
+                        echo "%PYTHONDLURL%" 
+                        del "%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.exe"
+                        GOTO End
+                    )
                 )
             )        
             IF "%PYWE_DEBUG%"=="1" (
@@ -152,6 +169,8 @@ echo --install ^<version^>
 echo     Installs that version of Python
 echo --install --no-check-certificate ^<version^>
 echo    Installs that version of Python, but does not check SSL certs
+echo --install --ca-certificate ^<cert^> ^<vesion^>
+echo    Installs that version of Python, using the specified certificate for SSL verification
 goto End
 
 :End

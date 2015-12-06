@@ -18,6 +18,26 @@ PyWE is extensible, but includes a basic list of commands to start with.
 * "pywe --use" <version> switches to the specified version of Python, if it is installed
 * "pywe --versions" displays a list of all currently supported Python versions to install
 
+### Installing Python with PyWE
+
+PyWE uses [wget.exe](http://gnuwin32.sourceforge.net/packages/wget.htm) to download Python installers.  Wget maintains an aggressive security posture, and won't download from sites broken or unverifiable SSL unless you tell it to.  Python uses SSL on its download site.  Because Windows is not setup the same way Unix is, wget does not know where to check for certificates, and so will not download installers from Python without giving it some further instructions
+
+#### Using a Certificate Bundle
+
+The safest way to install Python is to obtain a certificate bundle and tell the installer where to find it.
+
+For example:
+    
+    pywe --install --ca-certificate c:\cacerts\certbundle.pem 3.5.0
+    
+The most expedient way I have found to obtain a cert bundle [is to stand on the curl folks' shoulders](http://curl.haxx.se/docs/caextract.html).  This not the best security practice because you are trusting that the curl folks are competent and have not been compromised and that the transmission to you is safe.  Here's [a discussion of how you can do it yourself for ultimate peace of mind.](http://sourceforge.net/p/gnuwin32/discussion/general/thread/065c51d7/)
+
+#### Ignoring Certificate Warnings
+
+The most expedient way to install Python is to ignore certificate error:
+
+    pywe --install --no-check-certificate 3.5.0
+
 Manual Installation
 --------------------
 
