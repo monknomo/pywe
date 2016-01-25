@@ -1,59 +1,83 @@
-rem @@ECHO off
+rem @@ECHO on
 
 SHIFT
 
 rem check for prereqs
 
-
-
+set $VENVPREREQARG=
 
 IF "%1"=="" (
 	ECHO Please provide an argument
 	ECHO Use --venv --help to see all options
 	GOTO End
 ) ELSE (
-	IF "%1"=="create" (
-		shift
+    IF "%1"=="--no-check-certificate" (
+        SET $VENVPREREQARG=nocheckcertificate
+        goto shiftTheCheckVenvAction
+    ) ELSE (
+        IF "%1"=="--ca-certificate" (
+            SET $VENVPREREQARG=cacertificate %2
+            echo %$VENVPREREQARG%
+            goto shiftShiftTheCheckVenvAction
+        ) 
+        	goto checkVenvAction
+    )
+
+)
+
+:shiftShiftTheCheckVenvAction
+SHIFT
+:shiftTheCheckVenvAction
+SHIFT
+:checkVenvAction
+IF "%1"=="create" (
+    shift
+    FOR /F  %%a in (%PYWE_HOME%\lib\currentVersion.txt) do (
+        SET $CURRENT_PY=%%a
+    )
+    GOTO createVenv
+) ELSE (
+    IF "%1"=="activate" (
+        shift
         FOR /F  %%a in (%PYWE_HOME%\lib\currentVersion.txt) do (
             SET $CURRENT_PY=%%a
         )
-		GOTO createVenv
-	) ELSE (
-		IF "%1"=="activate" (
-			shift
+        GOTO activateVenv
+    ) ELSE (
+        IF "%1"=="deactivate" (
+            shift
             FOR /F  %%a in (%PYWE_HOME%\lib\currentVersion.txt) do (
                 SET $CURRENT_PY=%%a
             )
-			GOTO activateVenv
-		) ELSE (
-			IF "%1"=="deactivate" (
-				shift
+            GOTO deactivateVenv
+        ) ELSE (
+            IF "%1"=="list" (
                 FOR /F  %%a in (%PYWE_HOME%\lib\currentVersion.txt) do (
                     SET $CURRENT_PY=%%a
                 )
-				GOTO deactivateVenv
-			) ELSE (
-				IF "%1"=="list" (
-                    FOR /F  %%a in (%PYWE_HOME%\lib\currentVersion.txt) do (
-                        SET $CURRENT_PY=%%a
-                    )
-					GOTO listVenv
-				) ELSE (
-					IF "%1"=="--help" (
-					goto help
-					)
-				)
-			)
-		)
-	)
+                GOTO listVenv
+            ) ELSE (
+                IF "%1"=="--help" (
+                goto help
+                ) else (
+                    ECHO Command %1 unrecognized try "--help"
+                )
+            )
+        )
+    )
 )
+
+
 GOTO end
 rem pywe --venv create <name>
 :createVenv
+echo creating venv
+ECHO %1
+ECHO %$VENVPREREQARG%
 setlocal
 set $venvName=%1
 shift
-call "%PYWE_HOME%\lib\get-venv-prereqs.bat" 2 %*
+call "%PYWE_HOME%\lib\get-venv-prereqs.bat" %$VENVPREREQARG%
 IF ERRORLEVEL 1 (
 	goto end
 )
@@ -71,7 +95,7 @@ rem pywe --venv use <name>
 setlocal
 set $venvName=%1
 shift
-call "%PYWE_HOME%\lib\get-venv-prereqs.bat" 2 %*
+call "%PYWE_HOME%\lib\get-venv-prereqs.bat" %$VENVPREREQARG%
 IF ERRORLEVEL 1 (
 	goto end
 )
@@ -94,7 +118,7 @@ rem pywe --venv stop <name>
 setlocal
 set $venvName=%1
 shift
-call "%PYWE_HOME%\lib\get-venv-prereqs.bat" 2 %*
+call "%PYWE_HOME%\lib\get-venv-prereqs.bat" %$VENVPREREQARG%
 IF ERRORLEVEL 1 (
 	goto end
 )

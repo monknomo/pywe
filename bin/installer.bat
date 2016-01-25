@@ -13,6 +13,7 @@ move /Y README.txt %ALLUSERSPROFILE%\pywe >> %ALLUSERSPROFILE%\pywe\install_log.
 move /Y pywe.bat %ALLUSERSPROFILE%\pywe\bin >> %ALLUSERSPROFILE%\pywe\install_log.txt  2>&1
 move /Y pythonversions.txt %ALLUSERSPROFILE%\pywe\lib >> %ALLUSERSPROFILE%\pywe\install_log.txt  2>&1
 move /Y wget.exe %ALLUSERSPROFILE%\pywe\lib >> %ALLUSERSPROFILE%\pywe\install_log.txt  2>&1
+move /Y *.dll %ALLUSERSPROFILE%\pywe\lib >> %ALLUSERSPROFILE%\pywe\install_log.txt  2>&1
 move /Y wget_LICENSE.txt %ALLUSERSPROFILE%\pywe\lib >> %ALLUSERSPROFILE%\pywe\install_log.txt  2>&1
 move /Y get-venv-prereqs.bat %ALLUSERSPROFILE%\pywe\lib >> %ALLUSERSPROFILE%\pywe\install_log.txt  2>&1
 move /Y easy_install.bat %ALLUSERSPROFILE%\pywe\shims >> %ALLUSERSPROFILE%\pywe\install_log.txt  2>&1

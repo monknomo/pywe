@@ -2,136 +2,112 @@ rem this doesn't have real arg parsing
 rem the args must be like this
 rem none at all
 rem --cert pathtocert
-rem --cert pathtocert --insecure
 rem --insecure
-set /a $i=0
-set $insecure=
-set $certDir=
-set $pipProxy=
-SETLOCAL ENABLEDELAYEDEXPANSION
-set /a $throwawayArgs=%1+2
-set $certDirIsNext=
-set $pipProxyIsNext=
+rem only supports python 2.6+
 
-for %%x in (%*) do (
-    IF !$i! LSS !$throwawayArgs! (
-        rem do nothing, these are the args that were used in earlier scripts
+
+set $UNSAFE=
+set $caDirectory=
+SETLOCAL ENABLEDELAYEDEXPANSION
+FOR /F  %%a in (%PYWE_HOME%\lib\currentVersion.txt) do (
+    SET $CURRENT_PY=%%a
+)
+SET $EZSURL=https://bootstrap.pypa.io/ez_setup.py
+
+IF "%1"=="nocheckcertificate" (
+    goto setUnsafe
+) ELSE (
+    echo %1
+    IF "%1"=="cacertificate" (
+        echo %1
+        GOTO setCACERT
     ) ELSE (
-        IF "%%x"=="--insecure" (
-            IF "!$certDirIsNext!"=="1" (
-                echo You must provide a certificate with the --cert flag
-            ) ELSE (
-                IF "!$proxyDirIsNext!"=="1" (
-                    echo You must provide a proxy with the --proxy flag
-                ) ELSE (
-                    set $insecure=1
-                )
-            )
-        ) ELSE (
-            IF "%%x"=="--cert" (
-                IF "!$certDirIsNext!"=="1" (
-                    echo You must provide a certificate with the --cert flag
-                ) ELSE (
-                    IF "!$proxyDirIsNext!1" (
-                        echo You must provide a proxy with the --proxy flag
-                    ) ELSE (
-                        set $certDirIsNext=1
-                    )
-                )
-            ) ELSE (
-                IF "%%x"=="--proxy" (
-                    IF "!$certDirIsNext%!"=="1" (
-                        echo you must provide a certificate with the --cert flag
-                    ) ELSE (
-                        IF "!$proxyDirIsNext!"=="1" (
-                            echo You must provide a proxy with the --proxy flag
-                        ) ELSE (
-                            set $proxyDirIsNext=1
-                        )
-                    )
-                ) ELSE (
-                    IF "!$certDirIsNext!"=="1" (
-                        IF ""=="%%x" (
-                            echo You must provide a certificate with the --cert flag
-                            goto End
-                        )
-                        set $certDir=%%x
-                        set $certDirIsNext=
-                    ) ELSE (
-                        IF "!$proxyDirIsNext!"=="1" (
-                            IF ""=="%%x" (
-                                echo You must provide a proxy with the --proxy flag
-                                goto End
-                            )
-                            set $pipProxy=%%x
-                            set $pipProxyIsNext=
-                        )
-                        rem more elses go here
-                    )
-                )
-            )
-        )
+        GOTO flagsSet
     )
-    set /a $i+=1
 )
 
-if ""=="%$insecure%" (
-    goto ezInstallSecure
-) else (
-    if "1"=="%$insecure%" (
-        goto ezInstallInsecure
+
+
+rem annoying section to deal with variable expansion in if blocks
+:setUnsafe
+    echo UNSAFE SET
+    set $UNSAFE=1
+    SHIFT
+    goto flagsSet
+
+:setCACERT
+    echo CACERT SETTING
+    SHIFT
+    set $caDirectory=%1
+    set $caDirectory=%1
+    SHIFT
+    echo %1
+    goto flagsSet
+
+:flagsSet
+
+if ""=="%$UNSAFE%" (
+    if ""=="%$caDirectory%" (
+        goto ezInstallSecure
+    ) else (
+        goto ezInstallSecureWithCert
     )
+) else (
+    goto ezInstallInsecure
 )
 
 :checkPipOptions
 
-if ""=="%$certDir%" (
-    rem no cert flag
-    if ""=="%$pipProxy%" (
-        rem just proxy flag
-        goto pipWithProxy
-    ) else (
-        rem no cert or proxy flag
+if ""=="%$UNSAFE%" (
+    if ""=="%$caDirectory%" (
+        rem no cert flag
         goto pip
+    ) else (
+        rem cert flag
+        goto pipWithCert
+
     )
 ) else (
-    rem cert flag
-    if ""=="%$pipProxy%" (
-        rem just cert flag
-        goto pipWithCert
-    ) else (
-        rem cert and proxy flag
-        goto pipWithProxyAndCert
-    )
+    rem insecure pip
+    goto pipInsecure    
 )
 
+
 :checkVirtualEnvOptions
-if ""=="%$certDir%" (
+
+rem this step does not use wget and so the insecure flag is not relevant
+if ""=="%$caDirectory%" (
     rem no cert flag
-    if ""=="%$pipProxy%" (
-        rem just proxy flag
-        goto virtualEnvWithProxy
-    ) else (
-        rem no cert or proxy flag
-        goto virtualEnv
-    )
+    goto virtualEnv
 ) else (
     rem cert flag
-    if ""=="%$pipProxy%" (
-        rem just cert flag
-        goto virtualEnvWithCert
-    ) else (
-        rem cert and proxy flag
-        goto virtualEnvWithProxyAndCert
-    )
+    goto virtualEnvWithCert
 )
+
 
 
 :ezInstallSecure
 IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\easy_install.exe" (
     rem change download location
     echo easy install not found, installing easy install
-    %PYWE_HOME%\lib\wget --no-check-certificate -N --output-document="%PYWE_HOME%\lib\downloads\get_ez_setup.py" https://bootstrap.pypa.io/ez_setup.py
+    %PYWE_HOME%\lib\wget -N --output-document="%PYWE_HOME%\lib\downloads\get_ez_setup.py"  %$EZSURL%
+    "%PYWE_HOME%\versions\%$CURRENT_PY%\python.exe" "%PYWE_HOME%\lib\downloads\get_ez_setup.py"
+    IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\easy_install.exe" (
+        echo easy install install failed
+        endlocal & exit /b 1
+    ) ELSE (
+        echo easy install installed
+        goto checkPipOptions
+    )
+)
+goto checkPipOptions
+
+:ezInstallSecureWithCert
+IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\easy_install.exe" (
+    rem change download location
+    echo easy install not found, installing easy install
+    echo %PYWE_HOME%\lib\wget --ca-certificate=%$caDirectory% -N --output-document="%PYWE_HOME%\lib\downloads\get_ez_setup.py" %$EZSURL%
+    %PYWE_HOME%\lib\wget --ca-certificate=%$caDirectory% -N --output-document="%PYWE_HOME%\lib\downloads\get_ez_setup.py" %$EZSURL%
     "%PYWE_HOME%\versions\%$CURRENT_PY%\python.exe" "%PYWE_HOME%\lib\downloads\get_ez_setup.py"
     IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\easy_install.exe" (
         echo easy install install failed
@@ -147,8 +123,7 @@ goto checkPipOptions
 IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\easy_install.exe" (
     rem change download location
     echo easy install not found, installing easy install
-    %PYWE_HOME%\lib\wget --no-check-certificate -N --output-document="%PYWE_HOME%\lib\downloads\get_ez_setup.py" https://bootstrap.pypa.io/ez_setup.py
-
+    %PYWE_HOME%\lib\wget --no-check-certificate -N --output-document="%PYWE_HOME%\lib\downloads\get_ez_setup.py" %$EZSURL%
     "%PYWE_HOME%\versions\%$CURRENT_PY%\python.exe" "%PYWE_HOME%\lib\downloads\get_ez_setup.py" --insecure    
     IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\easy_install.exe" (
         echo easy install install failed
@@ -163,42 +138,10 @@ goto checkPipOptions
 :pipWithCert
 IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\pip.exe" (
     echo pip not found, installing pip
-    %PYWE_HOME%\lib\wget --no-check-certificate -N --output-document="%PYWE_HOME%\lib\downloads\get-pip.py" https://bootstrap.pypa.io/get-pip.py
+    %PYWE_HOME%\lib\wget --ca-certificate=%$caDirectory% -N --output-document="%PYWE_HOME%\lib\downloads\get-pip.py" https://bootstrap.pypa.io/get-pip.py
     rem use the cert flag
-    echo "%PYWE_HOME%\versions\%$CURRENT_PY%\python.exe" "%PYWE_HOME%\lib\downloads\get-pip.py" --cert %$certDir%
-    "%PYWE_HOME%\versions\%$CURRENT_PY%\python.exe" "%PYWE_HOME%\lib\downloads\get-pip.py" --cert %$certDir%
-    IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\pip.exe" (
-        echo pip install failed
-        endlocal & exit /b 1
-    ) ELSE (
-        echo pip installed
-        goto checkVirtualEnvOptions
-    )
-)
-goto checkVirtualEnvOptions
-
-:pipWithProxy
-IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\pip.exe" (
-    echo pip not found, installing pip
-    %PYWE_HOME%\lib\wget --no-check-certificate -N --output-document="%PYWE_HOME%\lib\downloads\get-pip.py" https://bootstrap.pypa.io/get-pip.py
-    rem use the proxy flag
-    "%PYWE_HOME%\versions\%$CURRENT_PY%\python.exe" "%PYWE_HOME%\lib\downloads\get-pip.py" --proxy %$pipProxy%
-    IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\pip.exe" (
-        echo pip install failed
-        endlocal & exit /b 1
-    ) ELSE (
-        echo pip installed
-        goto checkVirtualEnvOptions
-    )
-)
-goto checkVirtualEnvOptions
-
-:pipWithProxyAndCert
-IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\pip.exe" (
-    echo pip not found, installing pip
-    %PYWE_HOME%\lib\wget --no-check-certificate -N --output-document="%PYWE_HOME%\lib\downloads\get-pip.py" https://bootstrap.pypa.io/get-pip.py
-    rem use both the cert and proxy flags
-    "%PYWE_HOME%\versions\%$CURRENT_PY%\python.exe" "%PYWE_HOME%\lib\downloads\get-pip.py" --cert %$certDir% --proxy %$pipProxy%
+    echo "%PYWE_HOME%\versions\%$CURRENT_PY%\python.exe" "%PYWE_HOME%\lib\downloads\get-pip.py" --cert %$caDirectory%
+    "%PYWE_HOME%\versions\%$CURRENT_PY%\python.exe" "%PYWE_HOME%\lib\downloads\get-pip.py" --cert %$caDirectory%
     IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\pip.exe" (
         echo pip install failed
         endlocal & exit /b 1
@@ -210,6 +153,22 @@ IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\pip.exe" (
 goto checkVirtualEnvOptions
 
 :pip
+IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\pip.exe" (
+    echo pip not found, installing pip
+    %PYWE_HOME%\lib\wget -N --output-document="%PYWE_HOME%\lib\downloads\get-pip.py" https://bootstrap.pypa.io/get-pip.py
+    rem no flags at all, this is the default and should work for most people
+    "%PYWE_HOME%\versions\%$CURRENT_PY%\python.exe" "%PYWE_HOME%\lib\downloads\get-pip.py"
+    IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\pip.exe" (
+        echo pip install failed
+        endlocal & exit /b 1
+    ) ELSE (
+        echo pip installed
+        goto checkVirtualEnvOptions
+    )
+)
+goto checkVirtualEnvOptions
+
+:pipInsecure
 IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\pip.exe" (
     echo pip not found, installing pip
     %PYWE_HOME%\lib\wget --no-check-certificate -N --output-document="%PYWE_HOME%\lib\downloads\get-pip.py" https://bootstrap.pypa.io/get-pip.py
@@ -238,36 +197,10 @@ IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\virtualenv.exe" (
 )
 goto End
 
-:virtualEnvWithProxy
-IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\virtualenv.exe" (
-    echo virtualenv not installed, installing virtualenv
-    pip install virtualenv --proxy %$pipProxy%
-    IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\virtualenv.exe" (
-        echo virtualenv install failed
-        endlocal & exit /b 1
-    ) ELSE (
-        echo virtualenv installed
-    )
-)
-goto End
-
 :virtualEnvWithCert
 IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\virtualenv.exe" (
     echo virtualenv not installed, installing virtualenv
-    pip install virtualenv --cert %$certDir%
-    IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\virtualenv.exe" (
-        echo virtualenv install failed
-        endlocal & exit /b 1
-    ) ELSE (
-        echo virtualenv installed
-    )
-)
-goto End
-
-:virtualEnvWithProxyAndCert
-IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\virtualenv.exe" (
-    echo virtualenv not installed, installing virtualenv
-    pip install virtualenv --cert %$certDir% --proxy %$pipProxy%
+    pip install virtualenv --cert %$caDirectory%
     IF NOT EXIST "%PYWE_HOME%\versions\%$CURRENT_PY%\Scripts\virtualenv.exe" (
         echo virtualenv install failed
         endlocal & exit /b 1
