@@ -1,4 +1,4 @@
-rem @@ECHO on
+@rem @ECHO on
 
 SHIFT
 
@@ -17,7 +17,6 @@ IF "%1"=="" (
     ) ELSE (
         IF "%1"=="--ca-certificate" (
             SET $VENVPREREQARG=cacertificate %2
-            echo %$VENVPREREQARG%
             goto shiftShiftTheCheckVenvAction
         ) 
         	goto checkVenvAction
@@ -30,31 +29,23 @@ SHIFT
 :shiftTheCheckVenvAction
 SHIFT
 :checkVenvAction
+FOR /F  %%a in (%PYWE_HOME%\lib\currentVersion.txt) do (
+    SET $CURRENT_PY=%%a
+)
+
 IF "%1"=="create" (
     shift
-    FOR /F  %%a in (%PYWE_HOME%\lib\currentVersion.txt) do (
-        SET $CURRENT_PY=%%a
-    )
     GOTO createVenv
 ) ELSE (
     IF "%1"=="activate" (
         shift
-        FOR /F  %%a in (%PYWE_HOME%\lib\currentVersion.txt) do (
-            SET $CURRENT_PY=%%a
-        )
         GOTO activateVenv
     ) ELSE (
         IF "%1"=="deactivate" (
             shift
-            FOR /F  %%a in (%PYWE_HOME%\lib\currentVersion.txt) do (
-                SET $CURRENT_PY=%%a
-            )
             GOTO deactivateVenv
         ) ELSE (
             IF "%1"=="list" (
-                FOR /F  %%a in (%PYWE_HOME%\lib\currentVersion.txt) do (
-                    SET $CURRENT_PY=%%a
-                )
                 GOTO listVenv
             ) ELSE (
                 IF "%1"=="--help" (
@@ -72,8 +63,6 @@ GOTO end
 rem pywe --venv create <name>
 :createVenv
 echo creating venv
-ECHO %1
-ECHO %$VENVPREREQARG%
 setlocal
 set $venvName=%1
 shift
@@ -84,8 +73,15 @@ IF ERRORLEVEL 1 (
 IF EXIST "%PYWE_HOME%\virtualEnvironments\%$venvName%" (
 	ECHO %$venvName% already exists
 )
+sET _v=%$CURRENT_PY%
+SET _v=%_v:.=%
+SET _v=%_v:x64=% 
+if %_v% GEQ 330 (
+    python -m venv "%PYWE_HOME%\virtualEnvironments\%$venvName%"
+) else (
+    virtualenv "%PYWE_HOME%\virtualEnvironments\%$venvName%"
+)
 
-virtualenv "%PYWE_HOME%\virtualEnvironments\%$venvName%"
 endlocal
 
 GOTO end
@@ -99,7 +95,7 @@ call "%PYWE_HOME%\lib\get-venv-prereqs.bat" %$VENVPREREQARG%
 IF ERRORLEVEL 1 (
 	goto end
 )
-IF NOT EXIST "%PYWE_HOME%\virtualEnvironments\%$venvName%\Scripts\activate" (
+IF NOT EXIST "%PYWE_HOME%\virtualEnvironments\%$venvName%\Scripts\activate.bat" (
 	ECHO activate script doesn't exist
 	IF NOT EXIST "%PYWE_HOME%\virtualEnvironments\%$venvName%" (
 		ECHO %$venvName% does not appear to be a virtual environment

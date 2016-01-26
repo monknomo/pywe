@@ -6,6 +6,7 @@ SHIFT
 rem unset variables we're using
 set $CACERT=
 set $UNSAFE=
+
 IF "%1"=="" (
 	echo Please provide a Python version
 	echo Use --versions to list available Python versions
@@ -14,6 +15,7 @@ IF "%1"=="" (
 	IF "%1"=="--help" (
 		goto Help
 	) ELSE (
+
         IF "%1"=="--no-check-certificate" (
             goto setUnsafe
         ) ELSE (
@@ -29,7 +31,6 @@ IF "%1"=="" (
 )
 
 :flagsSet
-
 FOR /F "tokens=1,2,3,4 delims=," %%a in ('type "%PYWE_HOME%\lib\pythonversions.txt"') do (
 	IF "%%a"=="%1" (
 		SET PYTHONDLVERSION=%%c
@@ -149,7 +150,7 @@ IF "%PYINSTSTYLE%"=="msi1" (
             rem this might be troublesome, in that python requires some dlls...
             echo Download complete, installing python %PYTHONDLVERSION%
         )
-        "%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.exe" /passive TargetDir="%PYWE_HOME%\versions\%PYTHONDLVERSION%" Include_launcher=0 InstallLauncherAllUsers=0 SimpleInstall=1 Shortcuts=0 AssociateFiles=0
+        "%PYWE_HOME%\lib\downloads\python-%PYTHONDLVERSION%.exe" /passive TargetDir="%PYWE_HOME%\versions\%PYTHONDLVERSION%" InstallLauncherAllUsers=0 SimpleInstall=1 Shortcuts=0 AssociateFiles=0
         echo Switching current Python to %PYTHONDLVERSION%
         echo %PYTHONDLVERSION% > "%PYWE_HOME%\lib\currentVersion.txt" 
     ) ELSE (

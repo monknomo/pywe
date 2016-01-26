@@ -17,9 +17,7 @@ SET $EZSURL=https://bootstrap.pypa.io/ez_setup.py
 IF "%1"=="nocheckcertificate" (
     goto setUnsafe
 ) ELSE (
-    echo %1
     IF "%1"=="cacertificate" (
-        echo %1
         GOTO setCACERT
     ) ELSE (
         GOTO flagsSet
